@@ -18,7 +18,7 @@ public class ArenaEventListener implements Listener {
 	public void PlayerEnterToArenaRunCommand(PlayerMoveEvent e) {
 		Location loc = e.getTo();
 		Player p = e.getPlayer();
-		for (Arena arena : plugin.getArenas()) {
+		for (Arena arena : plugin.getArenas().values()) {
 			if (arena.contain(loc)) {
 				if (!arena.hadEntered(p)) {
 					arena.runPlayerBukkit(p, plugin);
@@ -35,7 +35,7 @@ public class ArenaEventListener implements Listener {
 	@EventHandler
 	public void leave(PlayerQuitEvent e){
 		Player p = e.getPlayer();
-		for(Arena arena:plugin.getArenas()){
+		for(Arena arena:plugin.getArenas().values()){
 			arena.stopPlayerBukkit(p);
 			arena.removePlayerEnter(p);
 		}

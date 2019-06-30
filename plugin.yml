@@ -1,7 +1,7 @@
 main: cn.BlockMC.Zao_Hon.ArenaCommand
 name: ArenaCommands
 author: Zao_hon
-version: 1.0215
+version: 1.1
 commands:
     ArenaCommand:
         aliases: [ac,acmd]

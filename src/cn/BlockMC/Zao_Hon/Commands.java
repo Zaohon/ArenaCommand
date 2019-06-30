@@ -49,10 +49,10 @@ public class Commands implements CommandExecutor {
 						p.sendMessage("§c        无");
 						p.sendMessage("§c       NOPE");
 					} else {
-						Iterator<Arena> it = plugin.getArenas().iterator();
-						while (it.hasNext()) {
-							p.sendMessage(it.next().getName());
-						}
+						plugin.getArenas().keySet().forEach(name -> {
+							p.sendMessage(name);
+						});
+
 					}
 					p.sendMessage("§b---------------------");
 					return true;
@@ -64,15 +64,14 @@ public class Commands implements CommandExecutor {
 				}
 				String arenaname = args[1];
 				String argcmd = args[2];
+				boolean exist = plugin.getArenas().containsKey(arenaname);
 				/////////////////////////////////////////
 				//////// ArenaCommand arena create////////
 				/////////////////////////////////////////
 				if (argcmd.equalsIgnoreCase("create")) {
-					for (Arena arena : plugin.getArenas()) {
-						if (arena.getName().equals(arenaname)) {
-							p.sendMessage("§b这个区域已经存在了");
-							return true;
-						}
+					if (exist) {
+						p.sendMessage("§b这个区域已经存在了");
+						return true;
 					}
 					p.sendMessage("§d请右键设置所需创建区域的左下角");
 					Listener lis = new Listener() {
@@ -106,7 +105,7 @@ public class Commands implements CommandExecutor {
 									HandlerList.unregisterAll(this);
 									Arena arena = new Arena(arenaname, loc1.getWorld(), loc1, loc2);
 									arena.saveToConfig(plugin);
-									plugin.getArenas().add(arena);
+									plugin.getArenas().put(arenaname, arena);
 									p.sendMessage("§b区域§d" + arenaname + "§b已创建完成");
 									return;
 								}
@@ -138,38 +137,56 @@ public class Commands implements CommandExecutor {
 				//////// ArenaCommand arena remove////////
 				/////////////////////////////////////////
 				else if (argcmd.equalsIgnoreCase("remove")) {
-					for (Arena arena : plugin.getArenas()) {
-						if (arena.getName().equals(arenaname)) {
-							plugin.getArenas().remove(arena);
-							arena.stopAllPlayerBukkit();
-							plugin.getConfig().set("Arena." + arenaname, null);
-							p.sendMessage("§b区域已删除");
-							return true;
-						}
-					}
-					p.sendMessage("§b区域不存在");
-					return true;
-					// if (plugin.getArenas().containsKey(arenaname)) {
-					// plugin.getArenas().remove(arenaname);
+					// for (Arena arena : plugin.getArenas()) {
+					// if (arena.getName().equals(arenaname)) {
+					// plugin.getArenas().remove(arena);
+					// arena.stopAllPlayerBukkit();
 					// plugin.getConfig().set("Arena." + arenaname, null);
 					// p.sendMessage("§b区域已删除");
 					// return true;
-					// } else {
+					// }
+					// }
 					// p.sendMessage("§b区域不存在");
 					// return true;
-					// }
+					if (exist) {
+						plugin.getArenas().remove(arenaname);
+						plugin.getConfig().set("Arena." + arenaname, null);
+						p.sendMessage("§b区域已删除");
+					} else {
+						p.sendMessage("§b区域不存在");
+					}
+					return true;
+				}
+				//////////////////////////////////////////
+				///////// ArenaCommand arena tp//////////
+				//////////////////////////////////////////
+				else if (argcmd.equalsIgnoreCase("tp")) {
+					if (exist) {
+						p.teleport(plugin.getArenas().get(arenaname).getLocationLow());
+					} else {
+						p.sendMessage("§b区域不存在");
+					}
+					return true;
+
 				}
 				//////////////////////////////////////////
 				///////// ArenaCommand arena info//////////
 				//////////////////////////////////////////
 				else if (argcmd.equalsIgnoreCase("info")) {
-					for (Arena arena : plugin.getArenas()) {
-						if (arena.getName().equals(arenaname)) {
-							p.sendMessage(arena.returninfo());
-							return true;
-						}
+					// for (Arena arena : plugin.getArenas()) {
+					// if (arena.getName().equals(arenaname)) {
+					// p.sendMessage(arena.returninfo());
+					// return true;
+					// }
+					// }
+					// p.sendMessage("§b区域不存在");
+					// return true;
+					if (plugin.getArenas().containsKey(arenaname)) {
+						Arena arena = plugin.getArenas().get(arenaname);
+						p.sendMessage(arena.returninfo());
+					} else {
+						p.sendMessage("§b区域不存在");
 					}
-					p.sendMessage("§b区域不存在");
 					return true;
 				}
 				//////////////////////////////////
@@ -192,78 +209,78 @@ public class Commands implements CommandExecutor {
 				}
 				String arenaname = args[1];
 				String argcmd = args[2];
-				for (Arena arena : plugin.getArenas()) {
-					if (arena.getName().equals(arenaname)) {
-						//////////////////////////////////////////
-						///////// ArenaCommand command add/////////
-						//////////////////////////////////////////
-						if (argcmd.equalsIgnoreCase("add")) {
-							if (lenth == 3) {
-								p.sendMessage("§d/ArenaCommand command <区域名> add <command> xxx");
-								return true;
-							}
-							String addcmd = "";
-							for (int i = 3; i < lenth; i++) {
-								addcmd = addcmd + args[i] + " ";
-							}
-							addcmd = addcmd.substring(0, addcmd.length() - 1);
-							String fircmd = plugin.getConfig().getString("Arena." + arenaname + ".Commands");
-							plugin.getConfig().set("Arena." + arenaname + ".Commands",
-									fircmd == null ? addcmd : fircmd + ";" + addcmd);
-							plugin.saveConfig();
-							arena.addCommand(addcmd);
-							p.sendMessage("§b已成功向§d" + arenaname + "§b区域添加指令§e" + addcmd);
-							return true;
-						}
-						//////////////////////////////////////////
-						///////// ArenaCommand command remove//////
-						//////////////////////////////////////////
-						else if (argcmd.equalsIgnoreCase("remove")) {
-							plugin.getConfig().set("Arena." + arenaname + ".Commands", null);
-							arena.clearCommands();
-							;
-							plugin.saveConfig();
-							p.sendMessage("§b已清除§d" + arenaname + "§b区域的所有指令");
-							return true;
-						}
-						//////////////////////////////////////////
-						///////// ArenaCommand command list//////
-						//////////////////////////////////////////
-						else if (argcmd.equalsIgnoreCase("list")) {
-							if (!arena.getCommands().isEmpty()) {
-								p.sendMessage("§b区域§d" + arenaname + "§b所绑定的命令有:");
-								for (String str : arena.getCommands()) {
-									p.sendMessage("§b"+ str);
-								}
-							} else {
-								p.sendMessage("§6该区域无指令绑定");
-							}
-							return true;
-						}
-						////////////////////////////////////////////
-						//////////// ArenaCommand command round/////
-						////////////////////////////////////////////
-						else if (argcmd.equalsIgnoreCase("round")) {
-							if (lenth == 3) {
-								p.sendMessage("§d/ArenaCommand command <区域名> round <周期时间>");
-								return true;
-							}
-							Long round = Long.valueOf(args[3]);
-							arena.setRound(round);
-							p.sendMessage("§b已设置区域§d" + arenaname + "§b指令运行周期为" + round);
-							return true;
-						}
-						///////////////////////////////
-						///////////////////////////////
-						else {
-							this.sendCommandHelp(p);
-							return true;
-						}
-					}
-				}
-				p.sendMessage("§b该区域不存在");
-				return true;
 
+				if (plugin.getArenas().containsKey(arenaname)) {
+					Arena arena = plugin.getArenas().get(arenaname);
+					//////////////////////////////////////////
+					///////// ArenaCommand command add////////
+					//////////////////////////////////////////
+					if (argcmd.equalsIgnoreCase("add")) {
+						if (lenth == 3) {
+							p.sendMessage("§d/ArenaCommand command <区域名> add <command> xxx");
+							return true;
+						}
+						String addcmd = "";
+						for (int i = 3; i < lenth; i++) {
+							addcmd = addcmd + args[i] + " ";
+						}
+						addcmd = addcmd.substring(0, addcmd.length() - 1);
+						String fircmd = plugin.getConfig().getString("Arena." + arenaname + ".Commands");
+						plugin.getConfig().set("Arena." + arenaname + ".Commands",
+								fircmd == null ? addcmd : fircmd + ";" + addcmd);
+						plugin.saveConfig();
+						arena.addCommand(addcmd);
+						p.sendMessage("§b已成功向§d" + arenaname + "§b区域添加指令§e" + addcmd);
+						return true;
+					}
+					//////////////////////////////////////////
+					///////// ArenaCommand command remove//////
+					//////////////////////////////////////////
+					else if (argcmd.equalsIgnoreCase("remove")) {
+						plugin.getConfig().set("Arena." + arenaname + ".Commands", null);
+						arena.clearCommands();
+						;
+						plugin.saveConfig();
+						p.sendMessage("§b已清除§d" + arenaname + "§b区域的所有指令");
+						return true;
+					}
+					//////////////////////////////////////////
+					///////// ArenaCommand command list//////
+					//////////////////////////////////////////
+					else if (argcmd.equalsIgnoreCase("list")) {
+						if (!arena.getCommands().isEmpty()) {
+							p.sendMessage("§b区域§d" + arenaname + "§b所绑定的命令有:");
+							for (String str : arena.getCommands()) {
+								p.sendMessage("§b" + str);
+							}
+						} else {
+							p.sendMessage("§6该区域无指令绑定");
+						}
+						return true;
+					}
+					////////////////////////////////////////////
+					//////////// ArenaCommand command round/////
+					////////////////////////////////////////////
+					else if (argcmd.equalsIgnoreCase("round")) {
+						if (lenth == 3) {
+							p.sendMessage("§d/ArenaCommand command <区域名> round <周期时间>");
+							return true;
+						}
+						Long round = Long.valueOf(args[3]);
+						arena.setRound(round);
+						p.sendMessage("§b已设置区域§d" + arenaname + "§b指令运行周期为" + round);
+						return true;
+					}
+					///////////////////////////////
+					///////////////////////////////
+					else {
+						this.sendCommandHelp(p);
+						return true;
+					}
+				} else {
+					p.sendMessage("§b该区域不存在");
+					return true;
+				}
 			}
 			//////////////////////////////////////////////////////////
 			////// 插件管理命令
@@ -318,13 +335,13 @@ public class Commands implements CommandExecutor {
 		p.sendMessage("§b/ac arena §d<区域名字> §acreate  §f--创建一个区域");
 		p.sendMessage("§b/ac arena §d<区域名字> §aremove  §f--删除一个区域");
 		p.sendMessage("§b/ac arena §d<区域名字> §ainfo  §f--查看某区域的信息");
+		p.sendMessage("§b/ac arena §d<区域名字> §atp  §f--传送至该区域");
 		p.sendMessage("§b-------------------------------------");
 	}
 
 	private void sendCommandHelp(Player p) {
 		p.sendMessage("§b指令管理:");
-		p.sendMessage("§b/ac command §d<区域名字> §ajoin xxx xxx  §f--添加进入时自动执行的指令");
-		p.sendMessage("§b/ac command §d<区域名字> §aleave xxx xxx  §f--添加离开时的指令");
+		p.sendMessage("§b/ac command §d<区域名字> §aadd xxx xxx  §f--添加进入时自动执行的指令");
 		p.sendMessage("§b/ac command §d<区域名字> §around §e<周期时间>  §f--设置该区域进入时运行指令的周期");
 		p.sendMessage("§b/ac command §d<区域名字> §aremove  §f--移除该区域的所有指令");
 		p.sendMessage("§b/ac command §d<区域名字> §alist  §f--列出该区域所绑定的指令");

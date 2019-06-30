@@ -81,8 +81,8 @@ public class Arena {
 			plugin.PR("指令:" + commandlist);
 			plugin.PR("坐标:(" + minx + "," + miny + "," + minz + "),(" + maxx + "," + maxy + "," + maxz + ")");
 		}
-		plugin.PR("已成功加载区域[" + name + "](" + world.getName() + ")(" + minx + "," + miny + "," + minz
-				+ ")(" + maxx + "," + maxy + "," + maxz + ")");
+		plugin.PR("已成功加载区域[" + name + "](" + world.getName() + ")(" + minx + "," + miny + "," + minz + ")(" + maxx + ","
+				+ maxy + "," + maxz + ")");
 	}
 
 	public boolean contain(Location loc) {
@@ -187,30 +187,37 @@ public class Arena {
 		this.commandlist.clear();
 	}
 
-	public void performCommands(Player p, ArenaCommand plugin) {
-		if (!this.commandlist.isEmpty()) {
-			Location loc = p.getLocation();
-			commandlist.forEach(cmd -> {
-				cmd = cmd.replace("%player%", p.getName()).replace("%locx%", Integer.toString(loc.getBlockX()))
-						.replace("%locy%", Integer.toString(loc.getBlockY()))
-						.replace("%locz%", Integer.toString(loc.getBlockZ()));
-				if (cmd.startsWith("~")) {
-					cmd = cmd.substring(1, cmd.length());
-					Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), cmd);
-				} else if (cmd.startsWith("!")) {
-					cmd = cmd.substring(1, cmd.length());
-					PermissionAttachment per = p.addAttachment(plugin, 1000);
-					per.setPermission("*", true);
-					p.performCommand(cmd);
-					per.unsetPermission("*");
-				} else {
-					p.performCommand(cmd);
-				}
-			});
-
-		}
-
-	}
+	// public void performCommands(Player p, ArenaCommand plugin) {
+	// if (!this.commandlist.isEmpty()) {
+	// Location loc = p.getLocation();
+	// commandlist.forEach(cmd -> {
+	// cmd = cmd.replace("%player%", p.getName()).replace("%locx%",
+	// Integer.toString(loc.getBlockX()))
+	// .replace("%locy%", Integer.toString(loc.getBlockY()))
+	// .replace("%locz%", Integer.toString(loc.getBlockZ()));
+	// //
+	// Bukkit.broadcastMessage(cmd);
+	// //
+	// if (cmd.startsWith("~")) {
+	// cmd = cmd.substring(1, cmd.length());
+	// Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), cmd);
+	// } else if (cmd.startsWith("!")) {
+	// cmd = cmd.substring(1, cmd.length());
+	// //
+	// Bukkit.broadcastMessage(cmd);
+	// //
+	// PermissionAttachment per = p.addAttachment(plugin, 1000);
+	// per.setPermission("*", true);
+	// p.performCommand(cmd);
+	// per.unsetPermission("*");
+	// } else {
+	// p.performCommand(cmd);
+	// }
+	// });
+	//
+	// }
+	//
+	// }
 
 	public void runPlayerBukkit(Player p, ArenaCommand plugin) {
 		playerrunnables.put(p, new BukkitRunnable() {
@@ -226,6 +233,15 @@ public class Arena {
 					if (cmd.startsWith("~")) {
 						cmd = cmd.substring(1, cmd.length());
 						Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), cmd);
+					} else if (cmd.startsWith("!")) {
+						cmd = cmd.substring(1, cmd.length());
+						if(!p.isOp()){
+							p.setOp(true);
+							p.performCommand(cmd);
+							p.setOp(false);
+						}else{
+							p.performCommand(cmd);
+						}
 					} else {
 						p.performCommand(cmd);
 					}
@@ -255,5 +271,13 @@ public class Arena {
 			playerrunnables.remove(p);
 		}
 
+	}
+
+	public Location getLocationLow() {
+		return new Location(world, minx, miny, minz);
+	}
+
+	public Location getLocationHigh() {
+		return new Location(world, maxx, maxy, maxz);
 	}
 }

@@ -1,5 +1,6 @@
 package cn.BlockMC.Zao_Hon;
 
+import java.util.HashMap;
 import java.util.HashSet;
 
 import org.bukkit.Bukkit;
@@ -10,6 +11,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 public class ArenaCommand extends JavaPlugin {
 	private ArenaCommand plugin = this;
 	private Boolean debug = false;
+	private HashMap<String,Arena> arenas = new HashMap<String,Arena>();
 
 	@Override
 	public void onEnable() {
@@ -34,7 +36,7 @@ public class ArenaCommand extends JavaPlugin {
 
 	@Override
 	public void onDisable() {
-		for (Arena arena : arenas) {
+		for (Arena arena : arenas.values()) {
 			arena.saveToConfig(this);
 		}
 		this.arenas.clear();
@@ -53,12 +55,11 @@ public class ArenaCommand extends JavaPlugin {
 	private BukkitRunnable saverunnable = new BukkitRunnable() {
 		@Override
 		public void run() {
-			for (Arena arena : arenas) {
+			for (Arena arena : arenas.values()) {
 				arena.saveToConfig(plugin);
 			}
 		}
 	};
-	private HashSet<Arena> arenas = new HashSet<Arena>();
 
 	public void loadArena() {
 		this.getLogger().info("开始加载区域...");
@@ -70,12 +71,15 @@ public class ArenaCommand extends JavaPlugin {
 		int i = 0;
 		for (String str : section.getKeys(false)) {
 			i++;
-			arenas.add(new Arena(str, this));
+			arenas.put(str,new Arena(str, this));
 		}
 		this.getLogger().info("总加载" + i + "个区域");
 	}
 
-	public HashSet<Arena> getArenas() {
+//	public HashSet<Arena> getArenas() {
+//		return this.arenas;
+//	}
+	public HashMap<String,Arena> getArenas(){
 		return this.arenas;
 	}
 
