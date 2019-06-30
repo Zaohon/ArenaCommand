@@ -1,0 +1,14 @@
+main: cn.BlockMC.Zao_Hon.ArenaCommand
+name: ArenaCommands
+author: Zao_hon
+version: 1.0215
+commands:
+    ArenaCommand:
+        aliases: [ac,acmd]
+permissions:
+    ArenaCommand.Arena:
+        default: op
+    ArenaCommand.Command:
+        default: op
+    ArenaCommand.Admin:
+        default: op
