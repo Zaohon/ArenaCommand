@@ -12,6 +12,7 @@ import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -72,10 +73,12 @@ public class Arena {
 		this.round = plugin.getConfig().getLong(arena + "Round");
 		plugin.Debug("÷∏¡Ó÷‹∆⁄:" + round);
 
-		for (String cmd : plugin.getConfig().getString(arena + "Commands").split(";")) {
+		for (String cmd : plugin.getConfig().getString(arena + "Commands","").split(";")) {
+			if(cmd!="")
 			this.addCommand(cmd);
 		}
-		for (String cmd : plugin.getConfig().getString(arena + "LeaveCommands").split(";")) {
+		for (String cmd : plugin.getConfig().getString(arena + "LeaveCommands","").split(";")) {
+			if(cmd!="")
 			this.addLeaveCommand(cmd);
 		}
 
@@ -228,6 +231,11 @@ public class Arena {
 				p.performCommand(cmd);
 			}
 		}
+	}
+	
+	public void destory() {
+		HandlerList.unregisterAll(listener);
+		stopAllPlayerBukkit();
 	}
 
 	public void stopAllPlayerBukkit() {

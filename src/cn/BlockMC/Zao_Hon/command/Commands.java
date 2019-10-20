@@ -265,6 +265,9 @@ public class Commands implements CommandExecutor {
 				////////////////////////////////////////////
 				if (argcmd.equalsIgnoreCase("reload")) {
 					plugin.reloadConfig();
+					plugin.getArenas().values().forEach(arena->{
+						arena.destory();
+					});
 					plugin.getArenas().clear();
 					plugin.loadArena();
 					p.sendMessage("§b[§b§l区域指令§b]§a插件重载完成");
