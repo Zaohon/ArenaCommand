@@ -8,6 +8,8 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import cn.BlockMC.Zao_Hon.command.Commands;
+
 public class ArenaCommand extends JavaPlugin {
 	private ArenaCommand plugin = this;
 	private Boolean debug = false;
@@ -15,14 +17,16 @@ public class ArenaCommand extends JavaPlugin {
 
 	@Override
 	public void onEnable() {
+		instance = this;
+		
 		this.saveDefaultConfig();
 		this.reloadConfig();
 		this.debug = getConfig().getBoolean("Debug");
 		this.getServer().getPluginManager().registerEvents(new ArenaEventListener(this), this);
 		this.getCommand("ArenaCommand").setExecutor(new Commands(this));
-		Bukkit.getScheduler().runTask(this, loadrunnable);
+		Bukkit.getScheduler().runTask(this, ()->loadArena());
 
-		this.saverunnable.runTaskTimer(this, 12000l, 12000l);
+//		this.saverunnable.runTaskTimer(this, 12000l, 12000l);
 		PR("========================");
 		PR("      ArenaCommand          ");
 		PR("     Version: " + this.getDescription().getVersion());
@@ -31,35 +35,17 @@ public class ArenaCommand extends JavaPlugin {
 
 		Metrics metrics = new Metrics(this);
 		metrics.addCustomChart(new Metrics.SimplePie("servers", () -> "Spigot"));
-
 	}
 
 	@Override
 	public void onDisable() {
 		for (Arena arena : arenas.values()) {
 			arena.saveToConfig(this);
+			arena.stopAllPlayerBukkit();
 		}
 		this.arenas.clear();
 		this.getLogger().info("Disable");
 	}
-
-	private Runnable loadrunnable = new Runnable() {
-
-		@Override
-		public void run() {
-			loadArena();
-		}
-
-	};
-
-	private BukkitRunnable saverunnable = new BukkitRunnable() {
-		@Override
-		public void run() {
-			for (Arena arena : arenas.values()) {
-				arena.saveToConfig(plugin);
-			}
-		}
-	};
 
 	public void loadArena() {
 		this.getLogger().info("开始加载区域...");
@@ -86,8 +72,13 @@ public class ArenaCommand extends JavaPlugin {
 	public void PR(String str) {
 		this.getLogger().info(str);
 	}
-
-	public Boolean isDebug() {
-		return debug;
+	
+	public void Debug(String str) {
+		if(debug)this.getLogger().info(str);
+	}
+	
+	private static ArenaCommand instance;
+	public static ArenaCommand getInstance() {
+		return instance;
 	}
 }
