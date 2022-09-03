@@ -4,12 +4,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.Location;
+import org.bukkit.Particle;
 import org.bukkit.World;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
@@ -17,12 +20,17 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
 import cn.BlockMC.Zao_Hon.events.PlayerEnterArenaEvent;
 import cn.BlockMC.Zao_Hon.events.PlayerLeaveArenaEvent;
 
 public class Arena {
+	private static final Color COLOR = Color.fromRGB(0, 191, 255);
+	private static final Particle.DustOptions OPTION = new Particle.DustOptions(COLOR, 0.24f);
 	private HashMap<Player, BukkitRunnable> playerrunnables = new HashMap<Player, BukkitRunnable>();
+	private HashMap<UUID,Integer> coolTimes = new HashMap<UUID,Integer>();
+	private BukkitTask coolTimeTask;
 	private List<String> commandList = new ArrayList<String>();
 	private List<String> leaveCommandList = new ArrayList<String>();
 	private Set<Player> playerSet = new HashSet<Player>();
@@ -35,6 +43,7 @@ public class Arena {
 	private int minz;
 	private int maxz;
 	private long round = 0;
+	private int cooltime = 0;
 	private ArenaListener listener;
 
 	public Arena(String name, World world, Location firloc, Location secloc) {
@@ -47,6 +56,7 @@ public class Arena {
 		this.minz = Math.min(firloc.getBlockZ(), secloc.getBlockZ());
 		this.maxz = Math.max(firloc.getBlockZ(), secloc.getBlockZ());
 		this.listener = new ArenaListener();
+		coolTimeTask = Bukkit.getServer().getScheduler().runTaskTimer(ArenaCommand.getInstance(), new CooltimeRunnable(), 0, 1*20);
 		Bukkit.getServer().getPluginManager().registerEvents(listener, ArenaCommand.getInstance());
 	}
 
@@ -71,7 +81,9 @@ public class Arena {
 		this.minz = plugin.getConfig().getInt(arena + "Minz");
 		this.maxz = plugin.getConfig().getInt(arena + "Maxz");
 		this.round = plugin.getConfig().getLong(arena + "Round");
+		this.cooltime = plugin.getConfig().getInt(arena + "Cooltime");
 		plugin.Debug("指令周期:" + round);
+		plugin.Debug("冷却时间:" + cooltime);
 
 		for (String cmd : plugin.getConfig().getString(arena + "Commands","").split(";")) {
 			if(cmd!="")
@@ -88,6 +100,7 @@ public class Arena {
 		plugin.PR("已成功加载区域[" + name + "](" + world.getName() + ")(" + minx + "," + miny + "," + minz + ")(" + maxx + ","
 				+ maxy + "," + maxz + ")");
 		this.listener = new ArenaListener();
+		coolTimeTask = Bukkit.getServer().getScheduler().runTaskTimer(ArenaCommand.getInstance(), new CooltimeRunnable(), 0, cooltime*20);
 		Bukkit.getServer().getPluginManager().registerEvents(listener, ArenaCommand.getInstance());
 	}
 
@@ -101,7 +114,7 @@ public class Arena {
 	}
 
 	public String[] returninfo() {
-		String[] str = new String[3];
+		String[] str = new String[6];
 		str[0] = "§b区域名:§a" + this.name;
 		str[1] = "§b坐标:[§a" + this.world.getName() + "§b],(§d" + this.minx + "§b,§d" + this.miny + "§b,§d" + this.minz
 				+ "§b),(§d" + this.maxx + "§b,§d" + this.maxy + "§b,§d" + this.maxz + "§b)";
@@ -122,7 +135,8 @@ public class Arena {
 			commands = commands.substring(1);
 			str[3] = "§b离开指令:§d" + commands == "" ? "无" : commands;
 		}
-		
+		str[4] = "§b重复执行周期:"+round;
+		str[5] = "§b冷却时间:"+cooltime;
 		return str;
 	}
 	
@@ -145,7 +159,6 @@ public class Arena {
 			commands = commands.substring(1);
 			str[1] = "§b离开指令:§d" + commands == "" ? "无" : commands;
 		}
-		
 		return str;
 	}
 
@@ -166,21 +179,16 @@ public class Arena {
 		plugin.getConfig().set("Arena." + name + ".Minz", minz);
 		plugin.getConfig().set("Arena." + name + ".Maxz", maxz);
 		plugin.getConfig().set("Arena." + name + ".Round", round);
+		plugin.getConfig().set("Arena." + name + ".Cooltime", cooltime);
 		plugin.saveConfig();
 	}
-
-//	public void addPlayer(Player p) {
-//		this.playerSet.add(p);
-//	}
-//
-//	public void removePlayer(Player p) {
-//		this.playerSet.remove(p);
-//	}
 
 	public void setRound(Long round) {
 		this.round = round;
 	}
-
+	public void setCooltime(int cooltime) {
+		this.cooltime = cooltime;
+	}
 	public void addCommand(String str) {
 		this.commandList.add(str);
 	}
@@ -234,6 +242,7 @@ public class Arena {
 	}
 	
 	public void destory() {
+		coolTimeTask.cancel();
 		HandlerList.unregisterAll(listener);
 		stopAllPlayerBukkit();
 	}
@@ -263,6 +272,27 @@ public class Arena {
 	public Location getLocationHigh() {
 		return new Location(world, maxx, maxy, maxz);
 	}
+	
+	public void displayToPlayer(Player player) {
+		
+		//TODO DISLAY particle
+//		Bukkit.broadcastMessage("displayyyyyyyy");
+//		for(double i=minx;i<=maxx;i+=0.5) {
+//			Bukkit.broadcastMessage(i+" "+miny+" "+minz);
+//			world.spawnParticle(Particle.REDSTONE, i, miny, minz, 0, 0, 0, 0, 0, OPTION);
+//			player.spawnParticle(Particle.REDSTONE, i, miny, minz, 0, 0, 0, 0, 0, OPTION);
+//			player.spawnParticle(Particle.REDSTONE, i, maxy, minz, 0, 0, 0, 0, 0, OPTION);
+//			player.spawnParticle(Particle.REDSTONE, i, miny, maxz, 0, 0, 0, 0, 0, OPTION);
+//			player.spawnParticle(Particle.REDSTONE, i, maxy, maxz, 0, 0, 0, 0, 0, OPTION);
+//		}
+//		for(double i=minz;i<=maxz;i+=0.5) {
+//			Bukkit.broadcastMessage(mix+" "+miny+" "+minz);
+//			world.spawnParticle(Particle.DRIP_WATER, minx, miny, i, 0, 0, 0, 0, 0, null);
+//			world.spawnParticle(Particle.DRIP_WATER, maxx, maxy, i, 0, 0, 0, 0, 0, null);
+//			world.spawnParticle(Particle.DRIP_WATER, minx, miny, i, 0, 0, 0, 0, 0, null);
+//			world.spawnParticle(Particle.DRIP_WATER, maxx, maxy, i, 0, 0, 0, 0, 0, null);
+//		}
+	}
 
 	private class ArenaListener implements Listener {
 
@@ -272,6 +302,14 @@ public class Arena {
 			Player p = e.getPlayer();
 			if (contain(loc)) {
 				if (playerSet.add(p)) {
+					
+					if(coolTimes.containsKey(p.getUniqueId())) {
+						ArenaCommand.getInstance().Debug("remain cooltime "+coolTimes.get(p.getUniqueId()));
+						return;
+					}else {
+						coolTimes.put(p.getUniqueId(), cooltime);
+					}
+					
 					ArenaCommand.getInstance().getServer().getPluginManager()
 							.callEvent(new PlayerEnterArenaEvent(Arena.this, p));
 					runPlayerBukkit(p, ArenaCommand.getInstance());
@@ -294,5 +332,22 @@ public class Arena {
 			playerSet.remove(p);
 		}
 
+	}
+	
+	private class CooltimeRunnable implements Runnable{
+		@Override
+		public void run() {
+			for(Entry<UUID,Integer> entry :coolTimes.entrySet()) {
+				UUID id = entry.getKey();
+				int time = entry.getValue();
+				if(time-1==0) {
+					coolTimes.remove(id);
+				}else {
+					coolTimes.put(id, time-1);
+				}
+				
+			}
+		}
+		
 	}
 }

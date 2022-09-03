@@ -1,4 +1,4 @@
-package cn.BlockMC.Zao_Hon.command;
+package cn.BlockMC.Zao_Hon.old;
 
 import org.bukkit.Location;
 import org.bukkit.command.Command;

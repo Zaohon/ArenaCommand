@@ -1,0 +1,14 @@
+command_heading=§b————ArenaCommand————
+command_description_plugin=区域指令插件
+command_description_help=  §b/ac help 插件帮助页面
+command_description_arena=  §b/ac arena 区域管理
+command_description_admin=  §b/ac admin 插件管理
+command_description_command=§b/ac admin 区域指令
+command_no_permission=§c权限不足
+command_error_command=§c指令错误
+command_error_invalid=§c无效参数
+command_error_grammar=§c语法错误
+command_error_player_offline=§c玩家%player%不在线
+command_error_at_least_one_player=发送失败,服务器需至少有一个人才能发送跨服消息
+command_error_player_only=§2该指令只能玩家使用
+chat_auto_use_success=§a喊话成功,消耗一个跨服喇叭
